@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="todoList.css">
+    <title>Document</title>
+</head>
+<body>
+    <title>
+        To Do List
+    </title>
+    <main>
+        <div>
+            <!--タイトル-->
+            <h1>To Do List</h1>
+        </div>
+        <div id="input">
+            <!--TODO入力-->
+            <label>TODO: <input type="text" id="todo"></label>
+            <!--優先度選択-->
+            優先度: 
+            <select>
+                <option value="">低</option>
+                <option selected>普通</option>
+                <option value="">高</option>
+            </select>
+            <!--期日入力-->
+            <label for="">期日： <input type="date"></label>
+            <!--登録ボタン-->
+            <button id="submit">登録</button>
+        </div>
+        <table id="table">
+            <tr>
+                <td id="todoLabel">TODO</td>
+                <td>優先度</td>
+                <td id="dateLabel">期日</td>
+                <td>完了</td>
+                <td>チャット</td>
+            </tr>
+        </table>
+    </main>
+    <!--JQUERY-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!--JQUERY-->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import {
+            getDatabase,
+            ref,
+            push,
+            set,
+            onChildAdded,
+            remove,
+            onChildRemoved,
+        } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        const firebaseConfig = {
+            apiKey: "***",
+            authDomain: "***",
+            databaseURL: "***",
+            projectId: "***",
+            storageBucket: "***",
+            messagingSenderId: "***",
+            appId: "***",
+            measurementId: "***"
+        };
+        const app = initializeApp(firebaseConfig);// Firebaseを使用する宣言
+        const db  = getDatabase(app); //RealtimeDBに接続
+        const dbRef = ref(db,"TODO"); //RealtimeDB内の"chat"を使う,データベースの保存されている場所を参照しますという意味
+
+        // ここからTODOリストの作成
+        const table = document.querySelector('table');
+        const todo = document.getElementById('todo'); //const todo = $("#todo").val()で代用できない理由は？
+        const priority = document.querySelector('select') //同上
+        const deadline = document.querySelector('input[type="date"]'); //同上
+        const submit = document.getElementById('submit'); //同上
+
+        // submit（登録ボタン）の稼働を確認
+        $("#submit").on("click",function(){
+            // alert(123)
+            // itemという名称のデータの塊を作成
+            const itemlist = []
+            // const item = {};
+            // item.todo = todo.value;
+            // item.priority = priority.value;
+            // item.deadline = deadline.value;
+            // item.done = "";
+            // item.chat = "";
+            // console.log(item);
+            const item = {};
+            item.atodo = todo.value;
+            item.bpriority = priority.value;
+            item.cdeadline = deadline.value;
+            item.ddone = "";
+            item.echat = "";
+            console.log(item);
+            itemlist.push(item)
+
+
+            // DBにデータを送る
+            const newitem = push(dbRef)
+            set(newitem,item)
+
+            //TODOが未記入だとアラートが出る
+            if(todo.value != ""){
+                item.todo = todo.value;
+            } else {
+                alert("TODOを入力してください")
+            }
+            //期日が未記入だとアラートが出る
+            if(deadline.value != ""){
+                item.deadline = deadline.value;
+            } else {
+                item.deadline = new Date().toLocaleDateString();
+                // window.alert("期日を入力してください");
+            }
+
+            // test用 - 新しいtrという要素を作り、itemに入っているキーの分だけ、1.tdという要素を作り 2.itemの中身を入力 3.trの末尾に加えていく という動作を繰り返す
+            // const tr = document.createElement("tr")
+            // for(const prop in item){
+            //     const td  = document.createElement("td")
+            //     td.textContent = item[prop]
+            //     tr.appendChild(td)
+            //     if(prop == "done"){
+            //         const checkbox = document.createElement("input");
+            //         checkbox.type = "checkbox"
+            //         checkbox.checked = item[prop]
+            //         td.appendChild(checkbox)
+            //     } else if(prop == "chat"){
+            //         const click = document.createElement("button");
+            //         click.type = "button"
+            //         td.appendChild(click)
+            //     } else {
+            //         td.textContent = item[prop];
+            //     }
+            // }
+            // table.append(tr)
+
+            // フォームの中身をリセットする
+            todo.value = ""
+            priority.value = "普通"
+            deadline.value = ""
+        })
+
+        // 受信処理→onChildAdded(どこから,function(情報が入る箱の名前){})
+        onChildAdded(dbRef,function(data){
+            const item = data.val()
+            console.log(item)
+            // let itemtable = `
+            //     <tr>
+            //         <td>${item.todo}</td>
+            //         <td>${item.priority}</td>
+            //         <td>${item.deadline}</td>
+            //         <td>${item.done}</td>
+            //         <td>${item.chat}</td>
+            //     </tr>`
+            //     console.log(itemtable)
+            //     table.append(itemtable)
+            const tr = document.createElement("tr")
+            for(const prop in item){
+                const td  = document.createElement("td")
+                td.textContent = item[prop]
+                tr.appendChild(td)
+                if(prop == "ddone"){
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox"
+                    checkbox.checked = item[prop]
+                    td.appendChild(checkbox)
+                } else if(prop == "echat"){
+                    const click = document.createElement("button");
+                    click.type = "button"
+                    td.appendChild(click)
+                } else {
+                    td.textContent = item[prop];
+                }
+            }
+            table.append(tr)
+        })
+
+    </script>
+    
+</body>
+</html>
